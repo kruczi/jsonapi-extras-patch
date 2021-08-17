@@ -1,0 +1,152 @@
+diff --git a/config/schema/jsonapi_extras.schema.yml b/config/schema/jsonapi_extras.schema.yml
+index 8aae4c4..69c2b86 100644
+--- a/config/schema/jsonapi_extras.schema.yml
++++ b/config/schema/jsonapi_extras.schema.yml
+@@ -5,10 +5,10 @@ jsonapi_extras.jsonapi_resource_config.*:
+     id:
+       type: string
+       label: 'Original Resource ID.'
+-    disabled:
++    enabled:
+       type: boolean
+-      label: 'Disabled'
+-      description: 'Is the resource disabled?'
++      label: 'Enabled'
++      description: 'Is the resource enabled?'
+     path:
+       type: string
+       label: 'Path'
+diff --git a/src/Entity/JsonapiResourceConfig.php b/src/Entity/JsonapiResourceConfig.php
+index 79fc57f..7ea5442 100644
+--- a/src/Entity/JsonapiResourceConfig.php
++++ b/src/Entity/JsonapiResourceConfig.php
+@@ -40,7 +40,7 @@ use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
+  *   },
+  *   config_export = {
+  *     "id",
+- *     "disabled",
++ *     "enabled",
+  *     "path",
+  *     "resourceType",
+  *     "resourceFields",
+diff --git a/src/Form/JsonapiResourceConfigForm.php b/src/Form/JsonapiResourceConfigForm.php
+index 94c7e26..f2e78a9 100644
+--- a/src/Form/JsonapiResourceConfigForm.php
++++ b/src/Form/JsonapiResourceConfigForm.php
+@@ -247,11 +247,11 @@ class JsonapiResourceConfigForm extends EntityForm {
+       '#weight' => 0,
+     ];
+ 
+-    $overrides_form['overrides']['entity']['disabled'] = [
++    $overrides_form['overrides']['entity']['enabled'] = [
+       '#type' => 'checkbox',
+-      '#title' => $this->t('Disabled'),
+-      '#description' => $this->t('Check this if you want to disable this resource. Disabling a resource can have unexpected results when following relationships belonging to that resource.'),
+-      '#default_value' => $entity->get('disabled'),
++      '#title' => $this->t('Enabled'),
++      '#description' => $this->t('Check this if you want to enable this resource.'),
++      '#default_value' => $entity->get('enabled'),
+     ];
+ 
+     $resource_type_name = $entity->get('resourceType');
+@@ -265,7 +265,7 @@ class JsonapiResourceConfigForm extends EntityForm {
+       '#default_value' => $resource_type_name,
+       '#states' => [
+         'visible' => [
+-          ':input[name="disabled"]' => ['checked' => FALSE],
++          ':input[name="enabled"]' => ['checked' => TRUE],
+         ],
+       ],
+     ];
+@@ -287,7 +287,7 @@ class JsonapiResourceConfigForm extends EntityForm {
+       '#required' => TRUE,
+       '#states' => [
+         'visible' => [
+-          ':input[name="disabled"]' => ['checked' => FALSE],
++          ':input[name="enabled"]' => ['checked' => TRUE],
+         ],
+       ],
+     ];
+@@ -324,7 +324,7 @@ class JsonapiResourceConfigForm extends EntityForm {
+       '#empty' => $this->t('No fields available.'),
+       '#states' => [
+         'visible' => [
+-          ':input[name="disabled"]' => ['checked' => FALSE],
++          ':input[name="enabled"]' => ['checked' => TRUE],
+         ],
+       ],
+       '#attached' => [
+diff --git a/src/JsonapiResourceConfigListBuilder.php b/src/JsonapiResourceConfigListBuilder.php
+index ff800d0..51ed330 100644
+--- a/src/JsonapiResourceConfigListBuilder.php
++++ b/src/JsonapiResourceConfigListBuilder.php
+@@ -141,7 +141,7 @@ class JsonapiResourceConfigListBuilder extends ConfigEntityListBuilder {
+       /** @var \Drupal\jsonapi_extras\Entity\JsonapiResourceConfig $resource_config */
+       $resource_config = $resource_type->getJsonapiResourceConfig();
+ 
+-      if ($resource_type->isInternal() && !$resource_config->get('disabled')) {
++      if ($resource_type->isInternal() && $resource_config->get('enabled')) {
+         continue;
+       }
+ 
+@@ -188,7 +188,7 @@ class JsonapiResourceConfigListBuilder extends ConfigEntityListBuilder {
+         $row['operations']['#links']['delete']['title'] = $this->t('Revert');
+       }
+ 
+-      $list[$resource_config->get('disabled') ? 'disabled' : 'enabled']['table'][] = $row;
++      $list[$resource_config->get('enabled') ? 'enabled' : 'disabled']['table'][] = $row;
+     }
+ 
+     return $list;
+diff --git a/src/ResourceType/ConfigurableResourceTypeRepository.php b/src/ResourceType/ConfigurableResourceTypeRepository.php
+index 213f52e..144e334 100644
+--- a/src/ResourceType/ConfigurableResourceTypeRepository.php
++++ b/src/ResourceType/ConfigurableResourceTypeRepository.php
+@@ -144,7 +144,7 @@ class ConfigurableResourceTypeRepository extends ResourceTypeRepository {
+       $entity_type->id(),
+       $bundle,
+       $entity_type->getClass(),
+-      $entity_type->isInternal() || (bool) $resource_config->get('disabled'),
++      $entity_type->isInternal() || (bool) !$resource_config->get('enabled'),
+       static::isLocatableResourceType($entity_type, $bundle),
+       TRUE,
+       static::isVersionableResourceType($entity_type),
+diff --git a/tests/src/Functional/JsonApiExtrasFunctionalTest.php b/tests/src/Functional/JsonApiExtrasFunctionalTest.php
+index 2fdaf9c..28a6ae4 100644
+--- a/tests/src/Functional/JsonApiExtrasFunctionalTest.php
++++ b/tests/src/Functional/JsonApiExtrasFunctionalTest.php
+@@ -381,7 +381,6 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
+     $this->assertCount(3, $created_response['data']);
+   }
+ 
+-
+   /**
+    * Creates the JSON:API Resource Config entities to override the resources.
+    */
+@@ -389,7 +388,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
+     // Disable the taxonomy_vocabulary resource.
+     JsonapiResourceConfig::create([
+       'id' => 'taxonomy_vocabulary--taxonomy_vocabulary',
+-      'disabled' => TRUE,
++      'enabled' => FALSE,
+       'path' => 'taxonomy_vocabulary/taxonomy_vocabulary',
+       'resourceType' => 'taxonomy_vocabulary--taxonomy_vocabulary',
+       'resourceFields' => [],
+@@ -397,7 +396,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
+     // Override paths and fields in the articles resource.
+     JsonapiResourceConfig::create([
+       'id' => 'node--article',
+-      'disabled' => FALSE,
++      'enabled' => TRUE,
+       'path' => 'articles',
+       'resourceType' => 'articles',
+       'resourceFields' => [
+@@ -589,7 +588,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
+     // Override the resource type in the node_type resource.
+     JsonapiResourceConfig::create([
+       'id' => 'node_type--node_type',
+-      'disabled' => FALSE,
++      'enabled' => TRUE,
+       'path' => 'contentTypes',
+       'resourceType' => 'contentTypes',
+       'resourceFields' => [
