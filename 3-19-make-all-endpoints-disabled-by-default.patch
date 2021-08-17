@@ -30,7 +30,7 @@ index 79fc57f..7ea5442 100644
   *     "resourceType",
   *     "resourceFields",
 diff --git a/src/Form/JsonapiResourceConfigForm.php b/src/Form/JsonapiResourceConfigForm.php
-index 94c7e26..f2e78a9 100644
+index 94c7e26..a77ea59 100644
 --- a/src/Form/JsonapiResourceConfigForm.php
 +++ b/src/Form/JsonapiResourceConfigForm.php
 @@ -247,11 +247,11 @@ class JsonapiResourceConfigForm extends EntityForm {
@@ -67,15 +67,6 @@ index 94c7e26..f2e78a9 100644
          ],
        ],
      ];
-@@ -324,7 +324,7 @@ class JsonapiResourceConfigForm extends EntityForm {
-       '#empty' => $this->t('No fields available.'),
-       '#states' => [
-         'visible' => [
--          ':input[name="disabled"]' => ['checked' => FALSE],
-+          ':input[name="enabled"]' => ['checked' => TRUE],
-         ],
-       ],
-       '#attached' => [
 diff --git a/src/JsonapiResourceConfigListBuilder.php b/src/JsonapiResourceConfigListBuilder.php
 index ff800d0..51ed330 100644
 --- a/src/JsonapiResourceConfigListBuilder.php
@@ -98,32 +89,11 @@ index ff800d0..51ed330 100644
      }
  
      return $list;
-diff --git a/src/ResourceType/ConfigurableResourceTypeRepository.php b/src/ResourceType/ConfigurableResourceTypeRepository.php
-index 213f52e..144e334 100644
---- a/src/ResourceType/ConfigurableResourceTypeRepository.php
-+++ b/src/ResourceType/ConfigurableResourceTypeRepository.php
-@@ -144,7 +144,7 @@ class ConfigurableResourceTypeRepository extends ResourceTypeRepository {
-       $entity_type->id(),
-       $bundle,
-       $entity_type->getClass(),
--      $entity_type->isInternal() || (bool) $resource_config->get('disabled'),
-+      $entity_type->isInternal() || (bool) !$resource_config->get('enabled'),
-       static::isLocatableResourceType($entity_type, $bundle),
-       TRUE,
-       static::isVersionableResourceType($entity_type),
 diff --git a/tests/src/Functional/JsonApiExtrasFunctionalTest.php b/tests/src/Functional/JsonApiExtrasFunctionalTest.php
-index 2fdaf9c..28a6ae4 100644
+index bf2b28b..58e97df 100644
 --- a/tests/src/Functional/JsonApiExtrasFunctionalTest.php
 +++ b/tests/src/Functional/JsonApiExtrasFunctionalTest.php
-@@ -381,7 +381,6 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
-     $this->assertCount(3, $created_response['data']);
-   }
- 
--
-   /**
-    * Creates the JSON:API Resource Config entities to override the resources.
-    */
-@@ -389,7 +388,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
+@@ -421,7 +421,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
      // Disable the taxonomy_vocabulary resource.
      JsonapiResourceConfig::create([
        'id' => 'taxonomy_vocabulary--taxonomy_vocabulary',
@@ -132,7 +102,7 @@ index 2fdaf9c..28a6ae4 100644
        'path' => 'taxonomy_vocabulary/taxonomy_vocabulary',
        'resourceType' => 'taxonomy_vocabulary--taxonomy_vocabulary',
        'resourceFields' => [],
-@@ -397,7 +396,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
+@@ -429,7 +429,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
      // Override paths and fields in the articles resource.
      JsonapiResourceConfig::create([
        'id' => 'node--article',
@@ -141,7 +111,7 @@ index 2fdaf9c..28a6ae4 100644
        'path' => 'articles',
        'resourceType' => 'articles',
        'resourceFields' => [
-@@ -589,7 +588,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
+@@ -621,7 +621,7 @@ class JsonApiExtrasFunctionalTest extends JsonApiFunctionalTestBase {
      // Override the resource type in the node_type resource.
      JsonapiResourceConfig::create([
        'id' => 'node_type--node_type',
