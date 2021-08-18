@@ -1,0 +1,18 @@
+diff --git a/config/schema/jsonapi_extras.schema.yml b/config/schema/jsonapi_extras.schema.yml
+index 8aae4c4..69c2b86 100644
+--- a/config/schema/jsonapi_extras.schema.yml
++++ b/config/schema/jsonapi_extras.schema.yml
+@@ -5,10 +5,10 @@ jsonapi_extras.jsonapi_resource_config.*:
+     id:
+       type: string
+       label: 'Original Resource ID.'
+-    disabled:
++    enabled:
+       type: boolean
+-      label: 'Disabled'
+-      description: 'Is the resource disabled?'
++      label: 'Enabled'
++      description: 'Is the resource enabled?'
+     path:
+       type: string
+       label: 'Path' 
